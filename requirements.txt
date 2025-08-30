@@ -1,0 +1,8 @@
+pandas==2.3.2
+numpy==2.3.2
+matplotlib==3.10.5
+transformers==4.55.4
+datasets==4.0.0
+kagglehub==0.3.13
+sentencepiece==0.2.1
+torch  # Let pip install the right version for the system
