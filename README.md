@@ -1,92 +1,132 @@
-# LLMs in Business Intelligence 🚀
+# LLMs in Business Intelligence: NL → SQL Assistant
 
-This project demonstrates how **Large Language Models (LLMs)** can be applied in **Business Intelligence (BI)** workflows by translating **natural language (NL) queries** into **SQL queries**, running them on the popular **Superstore dataset**, and visualizing the results with Python + SQLite.
+This project demonstrates how **Large Language Models (LLMs)** can be applied to **Business Intelligence (BI)** workflows by translating **natural language (NL)** questions into **SQL queries** for the popular *Superstore* dataset.  
 
----
+Users can ask questions like:
+- *"Show total sales and profit by region."*
+- *"List the top 10 customers by total sales."*
+- *"Show yearly sales totals from 2014 to 2017."*
 
-## 📌 Features
-- ✅ NL → SQL generation using Hugging Face (`t5-base-finetuned-wikiSQL`).
-- ✅ Fallback SQL templates for reliability.
-- ✅ Executable SQL queries on the Superstore dataset (via SQLite).
-- ✅ Export results to CSV for further analysis.
-- ✅ Visualization of insights with Matplotlib (e.g., sales by region, yearly sales).
-- ✅ Organized results folder with timestamped charts & logs.
-
----
-
-## 📊 Example Queries
-- **"Show total sales and profit by region."**
-- **"List the top 10 customers by total sales."**
-- **"Show profitability (profit margin) by product category."**
-- **"Show yearly sales totals from 2014 to 2017."**
-- **"Analyze how discount levels impact average profit."**
+The system automatically:
+1. Generates valid **SQLite SQL** from natural language.  
+2. Executes queries on the Superstore dataset.  
+3. Returns **tables and visualizations**.  
+4. Exports results to **CSV + charts** for reproducibility.  
 
 ---
 
-## 📂 Repository Structure
-```
-LLM-s-in-Business-Intelligence/
-│
-├── notebooks/                # Jupyter notebooks
-├── results/                  # CSV exports + charts (auto-generated)
-│   ├── nl_sql_results_*.csv
-│   ├── sales_profit_by_region_*.png
-│   └── yearly_sales_*.png
-├── Sales & Profit by Region.png   # Sample chart
-├── Yearly Sales.png               # Sample chart
-├── nl_sql_results.csv             # Example results log
-├── requirements.txt          # Python dependencies
-└── README.md                 # Project overview (this file)
-```
+## 🚀 Features
+- NL → SQL query translation using **Hugging Face T5 (WikiSQL fine-tuned model)**.  
+- Fallback SQL templates for robustness.  
+- Automatic exports:
+  - Individual CSVs per query
+  - Batch summary CSV
+  - Charts (`Sales by Region`, `Yearly Sales`)  
+- Organized `results/` folder with timestamps.  
+- Ready-to-deploy on **Binder** and **Streamlit**.  
 
 ---
 
-## 🛠️ Setup & Installation
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/SagarTechTrends/LLM-s-in-Business-Intelligence.git
-   cd LLM-s-in-Business-Intelligence
-   ```
-
-2. Create virtual environment:
-   ```bash
-   python3 -m venv myenv
-   source myenv/bin/activate  # on Linux/Mac
-   myenv\Scripts\activate     # on Windows
-   ```
-
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
----
-
-## 📈 Sample Outputs
-
+## 📊 Example Outputs
 ### Sales & Profit by Region
-![Sales & Profit by Region](Sales%20&%20Profit%20by%20Region.png)
+*(Add chart image here — e.g., `Sales & Profit by Region.png`)*
 
 ### Yearly Sales (2014–2017)
-![Yearly Sales](Yearly%20Sales.png)
+*(Add chart image here — e.g., `Yearly Sales.png`)*
 
 ---
 
-## 📄 Dataset
-- **Sample - Superstore** (public dataset, available on [Kaggle](https://www.kaggle.com/datasets/vivek468/superstore-dataset-final))  
-- Contains ~10k rows with attributes like `Order Date`, `Ship Date`, `Region`, `Category`, `Sales`, `Profit`, etc.
+## ⚙️ Setup
+
+### 1. Clone Repo
+```bash
+git clone https://github.com/SagarTechTrends/LLM-s-in-Business-Intelligence.git
+cd LLM-s-in-Business-Intelligence
+```
+
+### 2. Create Virtual Environment
+```bash
+python3 -m venv myenv
+source myenv/bin/activate   # on Mac/Linux
+myenv\Scripts\activate      # on Windows
+```
+
+### 3. Install Requirements
+```bash
+pip install -r requirements.txt
+```
 
 ---
 
-## 🚀 Future Enhancements
-- Add semantic layer for schema understanding.
-- Evaluate smaller domain-tuned models for faster/cheaper inference.
-- Integrate with BI dashboards (Power BI, Tableau, Streamlit).
-- CI test pack for generated SQL queries.
+## 🧑‍💻 Usage (Jupyter Notebook)
+
+1. Launch Jupyter:
+   ```bash
+   jupyter notebook
+   ```
+2. Open `LLM_SQL_BI.ipynb`.  
+3. Run all cells — ask NL questions and see generated SQL, execution results, and charts.  
+4. Results & exports will be saved under the `results/` folder.  
 
 ---
 
-## 👨‍💻 Author
-**Sagar Murugesh Babu**  
-🎓 M.S. Information Technology Management, University of Wisconsin–Milwaukee  
-🔗 [LinkedIn](https://www.linkedin.com/in/sagar-murugesh-babu-1a3454123/) | [GitHub](https://github.com/SagarTechTrends)
+## 🌐 Try Online (Binder)
+
+Click below to launch in Binder without installation:  
+
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/SagarTechTrends/LLM-s-in-Business-Intelligence/HEAD)
+
+---
+
+## 🌐 Streamlit Demo (Optional)
+
+Run a simple web app with Streamlit:  
+
+```bash
+streamlit run app.py
+```
+
+Deploy free at [Streamlit Cloud](https://streamlit.io/cloud).  
+
+---
+
+## 📂 Project Structure
+```
+LLM-s-in-Business-Intelligence/
+│── requirements.txt
+│── README.md
+│── LLM_SQL_BI.ipynb          # Main Jupyter Notebook
+│── app.py                    # (Optional) Streamlit App
+│── results/                  # Auto-generated CSVs + charts
+│   ├── query_*.csv
+│   ├── batch_results_summary_*.csv
+│   ├── sales_profit_by_region_*.png
+│   └── yearly_sales_*.png
+```
+
+---
+
+## 📄 Requirements
+All dependencies are listed in `requirements.txt`. Main libraries:
+- `pandas`
+- `numpy`
+- `matplotlib`
+- `transformers`
+- `datasets`
+- `sentencepiece`
+- `kagglehub`
+- `torch`
+
+---
+
+## 📌 Executive Summary
+**What we built:** A grounded NL→SQL assistant for ad-hoc BI questions on the Superstore dataset.  
+**Why it matters:** Reduces analyst dependency, speeds up exploratory analysis, and communicates insights with narratives and charts.  
+**Proof:** Valid SQL generated for five canonical questions; charts and CSVs exported.  
+**Risks:** Hallucinations and cost; mitigated with schema whitelists, fallback SQL, logging, and caches.  
+**Next:** Add a semantic layer, CI test pack, and usage analytics; evaluate smaller domain-tuned models for cost/latency.  
+
+---
+
+👨‍💻 Author: **Sagar Murugesh Babu**  
+📌 Repo: [LLM-s-in-Business-Intelligence](https://github.com/SagarTechTrends/LLM-s-in-Business-Intelligence)
