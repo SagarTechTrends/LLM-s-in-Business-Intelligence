@@ -11,9 +11,9 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 # =========================
 @st.cache_resource
 def load_db():
-    csv_path = "data/Sample - Superstore.csv"  # ✅ dataset should be in a "data" folder
+    csv_path = "Sample - Superstore.csv"  # ✅ CSV is in repo root
     if not os.path.exists(csv_path):
-        st.error(f"❌ Dataset not found at {csv_path}. Please upload it.")
+        st.error(f"❌ CSV file not found at {csv_path}")
         st.stop()
 
     superstore = pd.read_csv(csv_path, encoding="latin1")
