@@ -59,6 +59,20 @@ def safe_fallback(nl_query: str):
         return "SELECT [Ship Mode], SUM(Sales) AS Total_Sales, SUM(Profit) AS Total_Profit FROM superstore GROUP BY [Ship Mode];"
     if "state" in q and "sales" in q:
         return "SELECT State, SUM(Sales) AS Total_Sales FROM superstore GROUP BY State ORDER BY Total_Sales DESC LIMIT 10;"
+    if "city" in q and "profit" in q:
+        return "SELECT City, SUM(Profit) AS Total_Profit FROM superstore GROUP BY City ORDER BY Total_Profit DESC LIMIT 10;"
+    if "segment" in q:
+        return "SELECT Segment, SUM(Sales) AS Total_Sales, SUM(Profit) AS Total_Profit FROM superstore GROUP BY Segment;"
+    if "sub-category" in q and "sales" in q:
+        return "SELECT [Sub-Category], SUM(Sales) AS Total_Sales FROM superstore GROUP BY [Sub-Category] ORDER BY Total_Sales DESC;"
+    if "most profitable product" in q:
+        return "SELECT [Product Name], SUM(Profit) AS Total_Profit FROM superstore GROUP BY [Product Name] ORDER BY Total_Profit DESC LIMIT 10;"
+    if "least profitable product" in q:
+        return "SELECT [Product Name], SUM(Profit) AS Total_Profit FROM superstore GROUP BY [Product Name] ORDER BY Total_Profit ASC LIMIT 10;"
+    if "monthly sales trend" in q:
+        return "SELECT strftime('%Y-%m', [Order Date]) AS Month, SUM(Sales) AS Total_Sales FROM superstore GROUP BY Month ORDER BY Month;"
+    if "category contribution" in q:
+        return "SELECT Category, SUM(Sales) * 100.0 / (SELECT SUM(Sales) FROM superstore) AS ContributionPct FROM superstore GROUP BY Category;"
     return None
 
 def hf_nl_to_sql(nl_query):
@@ -99,7 +113,7 @@ def run_sql(query):
 st.title("🧠 LLMs in Business Intelligence")
 st.write("Ask questions on the **Superstore dataset** using natural language.")
 
-# Predefined queries for users
+# Predefined queries (15)
 preset_questions = [
     "Show total sales and profit by region.",
     "List the top 10 customers by total sales.",
@@ -107,10 +121,18 @@ preset_questions = [
     "Show yearly sales totals from 2014 to 2017.",
     "Analyze how discount levels impact average profit.",
     "Show sales and profit by Ship Mode.",
-    "Show top 10 states by sales."
+    "Show top 10 states by sales.",
+    "Show top 10 cities by profit.",
+    "Show sales and profit by Segment.",
+    "Show sales by Sub-Category.",
+    "Show the most profitable products.",
+    "Show the least profitable products.",
+    "Show monthly sales trend over time.",
+    "Show category contribution to total sales.",
+    "Show yearly profit trend by region."
 ]
 
-choice = st.selectbox("Or pick a predefined question:", ["--Select--"] + preset_questions)
+choice = st.selectbox("Pick a predefined question:", ["--Select--"] + preset_questions)
 user_query = st.text_input("Or type your own question:", "")
 
 final_query = choice if choice != "--Select--" else user_query
@@ -134,5 +156,11 @@ if st.button("Run Query") and final_query:
             st.bar_chart(result.set_index("Ship Mode")[["Total_Sales", "Total_Profit"]])
         elif "State" in result.columns and "Total_Sales" in result.columns:
             st.bar_chart(result.set_index("State")["Total_Sales"])
+        elif "Sub-Category" in result.columns and "Total_Sales" in result.columns:
+            st.bar_chart(result.set_index("Sub-Category")["Total_Sales"])
+        elif "Month" in result.columns and "Total_Sales" in result.columns:
+            st.line_chart(result.set_index("Month")["Total_Sales"])
+        elif "Category" in result.columns and "ContributionPct" in result.columns:
+            st.bar_chart(result.set_index("Category")["ContributionPct"])
     else:
         st.error(result)
