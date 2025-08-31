@@ -11,7 +11,18 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 # =========================
 @st.cache_resource
 def load_db():
-    csv_file = "data/superstore.csv"   # <-- exact path from your repo
+    csv_file = "data/superstore.csv"  # ensure this matches GitHub file name exactly
+
+    # Debug check
+    if os.path.exists("data"):
+        st.write("✅ Data folder found. Contents:", os.listdir("data"))
+    else:
+        st.write("❌ Data folder not found in repo.")
+
+    if not os.path.exists(csv_file):
+        st.error(f"❌ Dataset not found at {csv_file}")
+        return None
+
     superstore = pd.read_csv(csv_file, encoding="latin1")
 
     # Fix dates
@@ -81,6 +92,8 @@ def hf_nl_to_sql(nl_query):
     return sql, latency
 
 def run_sql(query):
+    if conn is None:
+        return "❌ Database not loaded. Please check dataset path."
     try:
         return pd.read_sql_query(query, conn)
     except Exception as e:
@@ -92,8 +105,7 @@ def run_sql(query):
 st.title("🧠 LLMs in Business Intelligence")
 st.write("Ask natural language queries on the **Superstore dataset** and see results with SQL + charts.")
 
-# Example queries
-example_queries = [
+example_questions = [
     "Show total sales and profit by region.",
     "List the top 10 customers by total sales.",
     "Show profitability (profit margin) by product category.",
@@ -101,14 +113,10 @@ example_queries = [
     "Analyze how discount levels impact average profit."
 ]
 
-option = st.selectbox("Choose an example question:", ["(Custom)"] + example_queries)
-custom_query = st.text_input("Or type your own question:")
+user_query = st.selectbox("Choose an example question:", ["(Custom)"] + example_questions)
 
-# Determine final query
-if option != "(Custom)":
-    user_query = option
-else:
-    user_query = custom_query
+if user_query == "(Custom)":
+    user_query = st.text_input("Or type your own question:", "")
 
 if st.button("Run Query") and user_query:
     sql, latency = hf_nl_to_sql(user_query)
