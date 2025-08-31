@@ -11,17 +11,18 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 # =========================
 @st.cache_resource
 def load_db():
-    csv_path = os.path.join("data", "superstore.csv")  # CSV inside /data folder
-    if not os.path.exists(csv_path):
-        st.error(f"❌ Dataset not found at {csv_path}. Please upload it.")
+    csv_file = "data/superstore.csv"  # dataset should be inside /data folder
+    if not os.path.exists(csv_file):
+        st.error(f"CSV file not found at {csv_file}. Please upload it.")
         st.stop()
 
-    superstore = pd.read_csv(csv_path, encoding="latin1")
+    superstore = pd.read_csv(csv_file, encoding="latin1")
 
     # Fix dates
     superstore["Order Date"] = pd.to_datetime(superstore["Order Date"], errors="coerce")
     superstore["Ship Date"] = pd.to_datetime(superstore["Ship Date"], errors="coerce")
 
+    # SQLite in-memory DB
     conn = sqlite3.connect(":memory:")
     superstore.to_sql("superstore", conn, if_exists="replace", index=False)
     return conn
@@ -29,7 +30,7 @@ def load_db():
 conn = load_db()
 
 # =========================
-# Load Hugging Face model
+# Hugging Face model
 # =========================
 @st.cache_resource
 def load_model():
@@ -57,22 +58,24 @@ def safe_fallback(nl_query: str):
         return "SELECT Discount, AVG(Profit) AS Avg_Profit FROM superstore GROUP BY Discount ORDER BY Discount;"
     if "ship mode" in q:
         return "SELECT [Ship Mode], SUM(Sales) AS Total_Sales, SUM(Profit) AS Total_Profit FROM superstore GROUP BY [Ship Mode];"
-    if "state" in q and "sales" in q:
+    if "top 10 states" in q:
         return "SELECT State, SUM(Sales) AS Total_Sales FROM superstore GROUP BY State ORDER BY Total_Sales DESC LIMIT 10;"
-    if "city" in q and "profit" in q:
+    if "top 10 cities" in q:
         return "SELECT City, SUM(Profit) AS Total_Profit FROM superstore GROUP BY City ORDER BY Total_Profit DESC LIMIT 10;"
     if "segment" in q:
         return "SELECT Segment, SUM(Sales) AS Total_Sales, SUM(Profit) AS Total_Profit FROM superstore GROUP BY Segment;"
-    if "sub-category" in q and "sales" in q:
+    if "sub-category" in q:
         return "SELECT [Sub-Category], SUM(Sales) AS Total_Sales FROM superstore GROUP BY [Sub-Category] ORDER BY Total_Sales DESC;"
-    if "most profitable product" in q:
+    if "most profitable products" in q:
         return "SELECT [Product Name], SUM(Profit) AS Total_Profit FROM superstore GROUP BY [Product Name] ORDER BY Total_Profit DESC LIMIT 10;"
-    if "least profitable product" in q:
+    if "least profitable products" in q:
         return "SELECT [Product Name], SUM(Profit) AS Total_Profit FROM superstore GROUP BY [Product Name] ORDER BY Total_Profit ASC LIMIT 10;"
-    if "monthly sales trend" in q:
+    if "monthly sales" in q:
         return "SELECT strftime('%Y-%m', [Order Date]) AS Month, SUM(Sales) AS Total_Sales FROM superstore GROUP BY Month ORDER BY Month;"
     if "category contribution" in q:
-        return "SELECT Category, SUM(Sales) * 100.0 / (SELECT SUM(Sales) FROM superstore) AS ContributionPct FROM superstore GROUP BY Category;"
+        return "SELECT Category, SUM(Sales)*100.0/(SELECT SUM(Sales) FROM superstore) AS ContributionPct FROM superstore GROUP BY Category;"
+    if "yearly profit trend" in q and "region" in q:
+        return "SELECT strftime('%Y', [Order Date]) AS Year, Region, SUM(Profit) AS Total_Profit FROM superstore GROUP BY Year, Region ORDER BY Year;"
     return None
 
 def hf_nl_to_sql(nl_query):
@@ -133,9 +136,13 @@ preset_questions = [
 ]
 
 choice = st.selectbox("Pick a predefined question:", ["--Select--"] + preset_questions)
-user_query = st.text_input("Or type your own question:", "")
 
-final_query = choice if choice != "--Select--" else user_query
+# Only show text input if no predefined question is selected
+if choice == "--Select--":
+    user_query = st.text_input("Or type your own question:", "")
+    final_query = user_query
+else:
+    final_query = choice
 
 if st.button("Run Query") and final_query:
     sql, latency = hf_nl_to_sql(final_query)
