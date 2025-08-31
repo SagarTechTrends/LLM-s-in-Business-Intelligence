@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 import sqlite3
 import matplotlib.pyplot as plt
-import re, time, os
+import re, time
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 
 # =========================
@@ -11,20 +11,15 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 # =========================
 @st.cache_resource
 def load_db():
-    csv_file = "data/superstore.csv"  # make sure dataset is in /data folder
-
-    if not os.path.exists(csv_file):
-        st.error("❌ Dataset not found. Please upload 'superstore.csv' inside the /data folder.")
-        return None
-
+    csv_file = "data/superstore.csv"  # make sure your dataset is in /data
     superstore = pd.read_csv(csv_file, encoding="latin1")
 
     # Fix dates
     superstore["Order Date"] = pd.to_datetime(superstore["Order Date"], errors="coerce")
     superstore["Ship Date"] = pd.to_datetime(superstore["Ship Date"], errors="coerce")
 
-    # SQLite in-memory DB
-    conn = sqlite3.connect(":memory:")
+    # SQLite in-memory DB (thread safe for Streamlit)
+    conn = sqlite3.connect(":memory:", check_same_thread=False)
     superstore.to_sql("superstore", conn, if_exists="replace", index=False)
     return conn
 
@@ -97,11 +92,7 @@ def run_sql(query):
 st.title("🧠 LLMs in Business Intelligence")
 st.write("Ask natural language queries on the **Superstore dataset** and see results with SQL + charts.")
 
-if conn is None:
-    st.stop()
-
-# Example dropdown
-example_queries = [
+example_questions = [
     "Show total sales and profit by region.",
     "List the top 10 customers by total sales.",
     "Show profitability (profit margin) by product category.",
@@ -109,13 +100,14 @@ example_queries = [
     "Analyze how discount levels impact average profit."
 ]
 
-user_query = st.selectbox("Choose an example question:", example_queries)
-custom_query = st.text_input("Or type your own question:")
+choice = st.selectbox("Choose an example question:", ["(Custom)"] + example_questions)
+if choice != "(Custom)":
+    user_query = choice
+else:
+    user_query = st.text_input("Or type your own question:")
 
-final_query = custom_query if custom_query else user_query
-
-if st.button("Run Query"):
-    sql, latency = hf_nl_to_sql(final_query)
+if st.button("Run Query") and user_query:
+    sql, latency = hf_nl_to_sql(user_query)
     st.markdown(f"**Generated SQL:** `{sql}`")
     st.markdown(f"⏱️ Latency: {round(latency, 2)} seconds")
 
@@ -124,10 +116,17 @@ if st.button("Run Query"):
     if isinstance(result, pd.DataFrame):
         st.dataframe(result)
 
-        # Simple chart logic
+        # Chart logic
         if "Region" in result.columns and "Total_Sales" in result.columns:
             st.bar_chart(result.set_index("Region")[["Total_Sales", "Total_Profit"]])
         elif "Year" in result.columns and "Total_Sales" in result.columns:
             st.line_chart(result.set_index("Year")["Total_Sales"])
+        elif "Discount" in result.columns and "Avg_Profit" in result.columns:
+            st.line_chart(result.set_index("Discount")["Avg_Profit"])
+        elif result.shape[1] == 2:  # generic fallback for 2-column queries
+            try:
+                st.bar_chart(result.set_index(result.columns[0])[result.columns[1]])
+            except:
+                pass
     else:
         st.error(result)
