@@ -11,17 +11,18 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 # =========================
 @st.cache_resource
 def load_db():
-    csv_path = "data/superstore.csv"  # ✅ fixed clean path
-    if not os.path.exists(csv_path):
-        st.error("❌ Dataset not found. Please upload it as data/superstore.csv")
-        st.stop()
+    csv_file = "data/superstore.csv"  # updated path
+    if not os.path.exists(csv_file):
+        st.error(f"❌ Dataset not found at {csv_file}")
+        return None
 
-    superstore = pd.read_csv(csv_path, encoding="latin1")
+    superstore = pd.read_csv(csv_file, encoding="latin1")
 
     # Fix dates
     superstore["Order Date"] = pd.to_datetime(superstore["Order Date"], errors="coerce")
     superstore["Ship Date"] = pd.to_datetime(superstore["Ship Date"], errors="coerce")
 
+    # SQLite in-memory DB
     conn = sqlite3.connect(":memory:")
     superstore.to_sql("superstore", conn, if_exists="replace", index=False)
     return conn
@@ -95,8 +96,8 @@ def run_sql(query):
 st.title("🧠 LLMs in Business Intelligence")
 st.write("Ask natural language queries on the **Superstore dataset** and see results with SQL + charts.")
 
-# Predefined questions
-default_questions = [
+# Example queries
+example_queries = [
     "Show total sales and profit by region.",
     "List the top 10 customers by total sales.",
     "Show profitability (profit margin) by product category.",
@@ -104,14 +105,16 @@ default_questions = [
     "Analyze how discount levels impact average profit."
 ]
 
-# Selectbox + Free input
-option = st.selectbox("Choose a sample question:", ["(Type your own)"] + default_questions)
-if option != "(Type your own)":
+option = st.selectbox("Choose an example question:", ["(Custom)"] + example_queries)
+custom_query = st.text_input("Or type your own question:")
+
+# Determine final query
+if option != "(Custom)":
     user_query = option
 else:
-    user_query = st.text_input("Or enter your own question:")
+    user_query = custom_query
 
-if st.button("Run Query"):
+if st.button("Run Query") and user_query:
     sql, latency = hf_nl_to_sql(user_query)
     st.markdown(f"**Generated SQL:** `{sql}`")
     st.markdown(f"⏱️ Latency: {round(latency, 2)} seconds")
@@ -121,7 +124,7 @@ if st.button("Run Query"):
     if isinstance(result, pd.DataFrame):
         st.dataframe(result)
 
-        # Chart logic
+        # Simple chart logic
         if "Region" in result.columns and "Total_Sales" in result.columns:
             st.bar_chart(result.set_index("Region")[["Total_Sales", "Total_Profit"]])
         elif "Year" in result.columns and "Total_Sales" in result.columns:
