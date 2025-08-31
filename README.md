@@ -1,132 +1,101 @@
-# LLMs in Business Intelligence: NL → SQL Assistant
+# 🧠 LLMs in Business Intelligence
 
-This project demonstrates how **Large Language Models (LLMs)** can be applied to **Business Intelligence (BI)** workflows by translating **natural language (NL)** questions into **SQL queries** for the popular *Superstore* dataset.  
+This project demonstrates how **Large Language Models (LLMs)** can enhance **Business Intelligence (BI)** by enabling **natural language queries** on structured datasets.  
+Using the **Superstore dataset** (from Kaggle), we built a **NL→SQL assistant** that lets users ask questions like:  
 
-Users can ask questions like:
-- *"Show total sales and profit by region."*
-- *"List the top 10 customers by total sales."*
-- *"Show yearly sales totals from 2014 to 2017."*
+- *"Show total sales and profit by region"*  
+- *"List the top 10 customers by sales"*  
+- *"Show yearly sales totals from 2014 to 2017"*  
 
-The system automatically:
-1. Generates valid **SQLite SQL** from natural language.  
-2. Executes queries on the Superstore dataset.  
-3. Returns **tables and visualizations**.  
-4. Exports results to **CSV + charts** for reproducibility.  
+…and instantly get results with SQL queries, tables, and visualizations.
 
 ---
 
 ## 🚀 Features
-- NL → SQL query translation using **Hugging Face T5 (WikiSQL fine-tuned model)**.  
-- Fallback SQL templates for robustness.  
-- Automatic exports:
-  - Individual CSVs per query
-  - Batch summary CSV
-  - Charts (`Sales by Region`, `Yearly Sales`)  
-- Organized `results/` folder with timestamps.  
-- Ready-to-deploy on **Binder** and **Streamlit**.  
+- Natural language to SQL query conversion (via Hugging Face T5 model).
+- Safe fallback SQL for common queries (no model needed).
+- SQLite in-memory database for fast querying.
+- Streamlit web UI with interactive charts & results.
+- Exports results (CSV + charts) for reproducibility.
 
 ---
 
-## 📊 Example Outputs
-### Sales & Profit by Region
-*(Add chart image here — e.g., `Sales & Profit by Region.png`)*
+## 📂 Dataset
+We use the **Sample Superstore dataset** from Kaggle:  
+👉 [Superstore Dataset (Kaggle)](https://www.kaggle.com/datasets/vivek468/superstore-dataset-final)
 
-### Yearly Sales (2014–2017)
-*(Add chart image here — e.g., `Yearly Sales.png`)*
+The app first checks if `Sample - Superstore.csv` exists locally.  
+If not found, it automatically downloads from KaggleHub.
 
 ---
 
-## ⚙️ Setup
+## 🛠️ Installation (Local Setup)
 
-### 1. Clone Repo
+Clone the repo:
+
 ```bash
 git clone https://github.com/SagarTechTrends/LLM-s-in-Business-Intelligence.git
 cd LLM-s-in-Business-Intelligence
 ```
 
-### 2. Create Virtual Environment
+Create a virtual environment & install dependencies:
+
 ```bash
 python3 -m venv myenv
-source myenv/bin/activate   # on Mac/Linux
-myenv\Scripts\activate      # on Windows
-```
+source myenv/bin/activate   # (Linux/Mac)
+myenv\Scripts\activate      # (Windows)
 
-### 3. Install Requirements
-```bash
 pip install -r requirements.txt
 ```
 
----
-
-## 🧑‍💻 Usage (Jupyter Notebook)
-
-1. Launch Jupyter:
-   ```bash
-   jupyter notebook
-   ```
-2. Open `LLM_SQL_BI.ipynb`.  
-3. Run all cells — ask NL questions and see generated SQL, execution results, and charts.  
-4. Results & exports will be saved under the `results/` folder.  
-
----
-
-## 🌐 Try Online (Binder)
-
-Click below to launch in Binder without installation:  
-
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/SagarTechTrends/LLM-s-in-Business-Intelligence/HEAD)
-
----
-
-## 🌐 Streamlit Demo (Optional)
-
-Run a simple web app with Streamlit:  
+Run the Streamlit app locally:
 
 ```bash
 streamlit run app.py
 ```
 
-Deploy free at [Streamlit Cloud](https://streamlit.io/cloud).  
+Open your browser at [http://localhost:8501](http://localhost:8501).
 
 ---
 
-## 📂 Project Structure
+## ☁️ Deploy to Streamlit Cloud
+
+1. Push your repo (with `app.py`, `requirements.txt`, and optionally the dataset CSV) to GitHub.
+2. Go to [Streamlit Cloud](https://share.streamlit.io/).
+3. Connect your GitHub repo.
+4. Select `app.py` as the entry point.
+5. Deploy 🚀.
+
+If you don’t upload the dataset, don’t worry — the app will auto-download it via KaggleHub.
+
+---
+
+## 📊 Example Queries
+
+- **Sales & Profit by Region**
+- **Top 10 Customers by Sales**
+- **Profitability by Category**
+- **Yearly Sales (2014–2017)**
+- **Discount Impact on Profit**
+
+The app generates SQL, executes it, and shows both **tables + charts**.
+
+---
+
+## 📦 Requirements
+See [`requirements.txt`](requirements.txt) for dependencies:
 ```
-LLM-s-in-Business-Intelligence/
-│── requirements.txt
-│── README.md
-│── LLM_SQL_BI.ipynb          # Main Jupyter Notebook
-│── app.py                    # (Optional) Streamlit App
-│── results/                  # Auto-generated CSVs + charts
-│   ├── query_*.csv
-│   ├── batch_results_summary_*.csv
-│   ├── sales_profit_by_region_*.png
-│   └── yearly_sales_*.png
+streamlit
+pandas
+numpy
+matplotlib
+sqlite3-bro
+transformers
+sentencepiece
+kagglehub
 ```
 
 ---
 
-## 📄 Requirements
-All dependencies are listed in `requirements.txt`. Main libraries:
-- `pandas`
-- `numpy`
-- `matplotlib`
-- `transformers`
-- `datasets`
-- `sentencepiece`
-- `kagglehub`
-- `torch`
-
----
-
-## 📌 Executive Summary
-**What we built:** A grounded NL→SQL assistant for ad-hoc BI questions on the Superstore dataset.  
-**Why it matters:** Reduces analyst dependency, speeds up exploratory analysis, and communicates insights with narratives and charts.  
-**Proof:** Valid SQL generated for five canonical questions; charts and CSVs exported.  
-**Risks:** Hallucinations and cost; mitigated with schema whitelists, fallback SQL, logging, and caches.  
-**Next:** Add a semantic layer, CI test pack, and usage analytics; evaluate smaller domain-tuned models for cost/latency.  
-
----
-
-👨‍💻 Author: **Sagar Murugesh Babu**  
-📌 Repo: [LLM-s-in-Business-Intelligence](https://github.com/SagarTechTrends/LLM-s-in-Business-Intelligence)
+## 📄 License
+MIT License – feel free to use, modify, and share.  
