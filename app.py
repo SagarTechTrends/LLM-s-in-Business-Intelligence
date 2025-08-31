@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 import sqlite3
 import matplotlib.pyplot as plt
-import re, time
+import re, time, os
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 
 # =========================
@@ -11,8 +11,12 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 # =========================
 @st.cache_resource
 def load_db():
-    csv_file = "Sample - Superstore.csv"  # make sure this CSV is in your repo
-    superstore = pd.read_csv(csv_file, encoding="latin1")
+    csv_path = "data/Sample - Superstore.csv"  # ✅ dataset should be in a "data" folder
+    if not os.path.exists(csv_path):
+        st.error(f"❌ Dataset not found at {csv_path}. Please upload it.")
+        st.stop()
+
+    superstore = pd.read_csv(csv_path, encoding="latin1")
 
     # Fix dates
     superstore["Order Date"] = pd.to_datetime(superstore["Order Date"], errors="coerce")
