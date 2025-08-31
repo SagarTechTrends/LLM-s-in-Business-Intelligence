@@ -11,16 +11,10 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 # =========================
 @st.cache_resource
 def load_db():
-    csv_file = "data/superstore.csv"  # ensure this matches GitHub file name exactly
-
-    # Debug check
-    if os.path.exists("data"):
-        st.write("✅ Data folder found. Contents:", os.listdir("data"))
-    else:
-        st.write("❌ Data folder not found in repo.")
+    csv_file = "data/superstore.csv"  # make sure dataset is in /data folder
 
     if not os.path.exists(csv_file):
-        st.error(f"❌ Dataset not found at {csv_file}")
+        st.error("❌ Dataset not found. Please upload 'superstore.csv' inside the /data folder.")
         return None
 
     superstore = pd.read_csv(csv_file, encoding="latin1")
@@ -92,8 +86,6 @@ def hf_nl_to_sql(nl_query):
     return sql, latency
 
 def run_sql(query):
-    if conn is None:
-        return "❌ Database not loaded. Please check dataset path."
     try:
         return pd.read_sql_query(query, conn)
     except Exception as e:
@@ -105,7 +97,11 @@ def run_sql(query):
 st.title("🧠 LLMs in Business Intelligence")
 st.write("Ask natural language queries on the **Superstore dataset** and see results with SQL + charts.")
 
-example_questions = [
+if conn is None:
+    st.stop()
+
+# Example dropdown
+example_queries = [
     "Show total sales and profit by region.",
     "List the top 10 customers by total sales.",
     "Show profitability (profit margin) by product category.",
@@ -113,13 +109,13 @@ example_questions = [
     "Analyze how discount levels impact average profit."
 ]
 
-user_query = st.selectbox("Choose an example question:", ["(Custom)"] + example_questions)
+user_query = st.selectbox("Choose an example question:", example_queries)
+custom_query = st.text_input("Or type your own question:")
 
-if user_query == "(Custom)":
-    user_query = st.text_input("Or type your own question:", "")
+final_query = custom_query if custom_query else user_query
 
-if st.button("Run Query") and user_query:
-    sql, latency = hf_nl_to_sql(user_query)
+if st.button("Run Query"):
+    sql, latency = hf_nl_to_sql(final_query)
     st.markdown(f"**Generated SQL:** `{sql}`")
     st.markdown(f"⏱️ Latency: {round(latency, 2)} seconds")
 
