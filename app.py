@@ -11,32 +11,17 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 # =========================
 @st.cache_resource
 def load_db():
-    # Try different possible CSV names
-    candidates = [
-        "superstore.csv",
-        "Sample - Superstore.csv",
-        "Data - Superstore.csv"
-    ]
-    
-    csv_file = None
-    for f in candidates:
-        if os.path.exists(f):
-            csv_file = f
-            break
-
-    if csv_file is None:
-        st.error("❌ Could not find Superstore dataset. Please ensure it’s uploaded.")
+    csv_path = "data/superstore.csv"  # ✅ fixed clean path
+    if not os.path.exists(csv_path):
+        st.error("❌ Dataset not found. Please upload it as data/superstore.csv")
         st.stop()
 
-    st.write(f"📂 Using dataset: **{csv_file}**")
-
-    superstore = pd.read_csv(csv_file, encoding="latin1")
+    superstore = pd.read_csv(csv_path, encoding="latin1")
 
     # Fix dates
     superstore["Order Date"] = pd.to_datetime(superstore["Order Date"], errors="coerce")
     superstore["Ship Date"] = pd.to_datetime(superstore["Ship Date"], errors="coerce")
 
-    # SQLite in-memory DB
     conn = sqlite3.connect(":memory:")
     superstore.to_sql("superstore", conn, if_exists="replace", index=False)
     return conn
@@ -110,7 +95,8 @@ def run_sql(query):
 st.title("🧠 LLMs in Business Intelligence")
 st.write("Ask natural language queries on the **Superstore dataset** and see results with SQL + charts.")
 
-questions = [
+# Predefined questions
+default_questions = [
     "Show total sales and profit by region.",
     "List the top 10 customers by total sales.",
     "Show profitability (profit margin) by product category.",
@@ -118,10 +104,12 @@ questions = [
     "Analyze how discount levels impact average profit."
 ]
 
-user_query = st.selectbox("Pick a question or type your own:", options=["(Custom Input)"] + questions)
-
-if user_query == "(Custom Input)":
-    user_query = st.text_input("Enter your question:")
+# Selectbox + Free input
+option = st.selectbox("Choose a sample question:", ["(Type your own)"] + default_questions)
+if option != "(Type your own)":
+    user_query = option
+else:
+    user_query = st.text_input("Or enter your own question:")
 
 if st.button("Run Query"):
     sql, latency = hf_nl_to_sql(user_query)
@@ -133,7 +121,7 @@ if st.button("Run Query"):
     if isinstance(result, pd.DataFrame):
         st.dataframe(result)
 
-        # Simple chart logic
+        # Chart logic
         if "Region" in result.columns and "Total_Sales" in result.columns:
             st.bar_chart(result.set_index("Region")[["Total_Sales", "Total_Profit"]])
         elif "Year" in result.columns and "Total_Sales" in result.columns:
