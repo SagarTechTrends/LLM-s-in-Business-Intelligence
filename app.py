@@ -11,11 +11,7 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 # =========================
 @st.cache_resource
 def load_db():
-    csv_file = "data/superstore.csv"  # updated path
-    if not os.path.exists(csv_file):
-        st.error(f"❌ Dataset not found at {csv_file}")
-        return None
-
+    csv_file = "data/superstore.csv"   # <-- exact path from your repo
     superstore = pd.read_csv(csv_file, encoding="latin1")
 
     # Fix dates
