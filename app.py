@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 import sqlite3
 import matplotlib.pyplot as plt
-import re, time
+import re, time, os
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 
 # =========================
@@ -11,22 +11,25 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 # =========================
 @st.cache_resource
 def load_db():
-    csv_file = "data/superstore.csv"  # ensure file is in data/ folder
-    superstore = pd.read_csv(csv_file, encoding="latin1")
+    csv_path = os.path.join("data", "superstore.csv")  # CSV inside /data folder
+    if not os.path.exists(csv_path):
+        st.error(f"❌ Dataset not found at {csv_path}. Please upload it.")
+        st.stop()
+
+    superstore = pd.read_csv(csv_path, encoding="latin1")
 
     # Fix dates
     superstore["Order Date"] = pd.to_datetime(superstore["Order Date"], errors="coerce")
     superstore["Ship Date"] = pd.to_datetime(superstore["Ship Date"], errors="coerce")
 
-    # SQLite in-memory DB
-    conn = sqlite3.connect(":memory:", check_same_thread=False)
+    conn = sqlite3.connect(":memory:")
     superstore.to_sql("superstore", conn, if_exists="replace", index=False)
     return conn
 
 conn = load_db()
 
 # =========================
-# Hugging Face model
+# Load Hugging Face model
 # =========================
 @st.cache_resource
 def load_model():
@@ -36,22 +39,6 @@ def load_model():
     return pipeline("text2text-generation", model=model, tokenizer=tokenizer, device=-1)
 
 hf_generator = load_model()
-
-# =========================
-# Example Questions
-# =========================
-example_questions = [
-    "Show total sales and profit by region.",
-    "List the top 10 customers by total sales.",
-    "Show profitability (profit margin) by product category.",
-    "Show yearly sales totals from 2014 to 2017.",
-    "Analyze how discount levels impact average profit.",
-    "Which sub-category has the highest sales?",
-    "Show total sales by shipping mode.",
-    "List top 5 states by total profit.",
-    "Show monthly sales trend for 2017.",
-    "Compare average discount by region."
-]
 
 # =========================
 # Helpers
@@ -68,16 +55,10 @@ def safe_fallback(nl_query: str):
         return "SELECT strftime('%Y', [Order Date]) AS Year, SUM(Sales) AS Total_Sales FROM superstore GROUP BY Year ORDER BY Year;"
     if "discount" in q and "profit" in q:
         return "SELECT Discount, AVG(Profit) AS Avg_Profit FROM superstore GROUP BY Discount ORDER BY Discount;"
-    if "sub-category" in q:
-        return "SELECT [Sub-Category], SUM(Sales) AS Total_Sales FROM superstore GROUP BY [Sub-Category] ORDER BY Total_Sales DESC LIMIT 1;"
-    if "shipping mode" in q:
-        return "SELECT [Ship Mode], SUM(Sales) AS Total_Sales FROM superstore GROUP BY [Ship Mode];"
-    if "top 5 states" in q:
-        return "SELECT State, SUM(Profit) AS Total_Profit FROM superstore GROUP BY State ORDER BY Total_Profit DESC LIMIT 5;"
-    if "monthly sales trend" in q:
-        return "SELECT strftime('%Y-%m', [Order Date]) AS Month, SUM(Sales) AS Total_Sales FROM superstore WHERE strftime('%Y',[Order Date])='2017' GROUP BY Month ORDER BY Month;"
-    if "average discount by region" in q:
-        return "SELECT Region, AVG(Discount) AS Avg_Discount FROM superstore GROUP BY Region;"
+    if "ship mode" in q:
+        return "SELECT [Ship Mode], SUM(Sales) AS Total_Sales, SUM(Profit) AS Total_Profit FROM superstore GROUP BY [Ship Mode];"
+    if "state" in q and "sales" in q:
+        return "SELECT State, SUM(Sales) AS Total_Sales FROM superstore GROUP BY State ORDER BY Total_Sales DESC LIMIT 10;"
     return None
 
 def hf_nl_to_sql(nl_query):
@@ -116,16 +97,26 @@ def run_sql(query):
 # Streamlit UI
 # =========================
 st.title("🧠 LLMs in Business Intelligence")
-st.write("Ask natural language queries on the **Superstore dataset** and see results with SQL + charts.")
+st.write("Ask questions on the **Superstore dataset** using natural language.")
 
-choice = st.selectbox("Choose an example question:", ["(Custom)"] + example_questions)
-if choice == "(Custom)":
-    user_query = st.text_input("Or type your own question:")
-else:
-    user_query = choice
+# Predefined queries for users
+preset_questions = [
+    "Show total sales and profit by region.",
+    "List the top 10 customers by total sales.",
+    "Show profitability (profit margin) by product category.",
+    "Show yearly sales totals from 2014 to 2017.",
+    "Analyze how discount levels impact average profit.",
+    "Show sales and profit by Ship Mode.",
+    "Show top 10 states by sales."
+]
 
-if st.button("Run Query") and user_query:
-    sql, latency = hf_nl_to_sql(user_query)
+choice = st.selectbox("Or pick a predefined question:", ["--Select--"] + preset_questions)
+user_query = st.text_input("Or type your own question:", "")
+
+final_query = choice if choice != "--Select--" else user_query
+
+if st.button("Run Query") and final_query:
+    sql, latency = hf_nl_to_sql(final_query)
     st.markdown(f"**Generated SQL:** `{sql}`")
     st.markdown(f"⏱️ Latency: {round(latency, 2)} seconds")
 
@@ -134,16 +125,14 @@ if st.button("Run Query") and user_query:
     if isinstance(result, pd.DataFrame) and not result.empty:
         st.dataframe(result)
 
-        # Simple chart logic
+        # Chart logic
         if "Region" in result.columns and "Total_Sales" in result.columns:
-            st.bar_chart(result.set_index("Region")[["Total_Sales", "Total_Profit"]] if "Total_Profit" in result.columns else result.set_index("Region")[["Total_Sales"]])
+            st.bar_chart(result.set_index("Region")[["Total_Sales", "Total_Profit"]])
         elif "Year" in result.columns and "Total_Sales" in result.columns:
             st.line_chart(result.set_index("Year")["Total_Sales"])
-        elif "Month" in result.columns and "Total_Sales" in result.columns:
-            st.line_chart(result.set_index("Month")["Total_Sales"])
-        elif "State" in result.columns and "Total_Profit" in result.columns:
-            st.bar_chart(result.set_index("State")["Total_Profit"])
-        elif "Ship Mode" in result.columns and "Total_Sales" in result.columns:
-            st.bar_chart(result.set_index("Ship Mode")["Total_Sales"])
+        elif "Ship Mode" in result.columns:
+            st.bar_chart(result.set_index("Ship Mode")[["Total_Sales", "Total_Profit"]])
+        elif "State" in result.columns and "Total_Sales" in result.columns:
+            st.bar_chart(result.set_index("State")["Total_Sales"])
     else:
         st.error(result)
